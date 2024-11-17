@@ -1,4 +1,6 @@
-# Travail préliminaire
+# BE2
+
+## Travail préliminaire
 
 Les fichiers nécessaires au déroulement du BE se trouvent sous Github.
 Pour les récupérer, exécutez la commande :
@@ -21,16 +23,17 @@ be2
 ```
 
 L’exercice de la
-section [2]{#sec:gestion} permet de comprendre les intéractions
+section 2 permet de comprendre les intéractions
 entre un processus fils et son processus parent. L’exercice de la
 section 3 contient le BE à proprement parler. Le
 travail réalisé dans cette partie devra être remis sous Moodle et sera
 noté.
 
-# Gestion des processus {#sec:gestion}
+## Gestion des processus
 
 On considère le programme suivant :
 
+```c
     int main(int argc, char *argv[]) {
         int tempsPere, tempsFils;
         pid_t pid_fork;
@@ -64,8 +67,9 @@ On considère le programme suivant :
         }
         return EXIT_SUCCESS; /* -> exit(EXIT_SUCCESS); pour le père */
     }
+```
 
-## Exécution et état des processus
+### Exécution et état des processus
 
 1. Compilez le programme en utilisant `gcc` :
 
@@ -86,7 +90,7 @@ On considère le programme suivant :
     `tempsPere` et exécutez le programme. En utilisant la commande
     `ps -fg`, que constatez-vous lorsque le processus père a terminé ?
 
-## Héritage des données
+### Héritage des données
 
 Modifiez le programme précédent avec :
 
@@ -97,13 +101,13 @@ Modifiez le programme précédent avec :
 Affichez `variable` à la fin du code du fils et à la fin du code du
 père. Que constatez-vous ?
 
-## Attente de la terminaison du fils
+### Attente de la terminaison du fils
 
 Remplacez la ligne `sleep(tempsPere)` pour que le processus attende la
 terminaison du fils.
 
 Exemple d’appel de la primitive `wait()` :
-
+```c
     int status;
     pid_t pidFils;
     if ( (pidFils= wait(&status)) != -1 ) {
@@ -115,6 +119,7 @@ Exemple d’appel de la primitive `wait()` :
             pidFils, WTERMSIG(status));
         }
     }
+```
 
 1. Quel est l’affichage du programme lorsque le processus se termine
     normalement (exécution de `exit`) ?
@@ -127,7 +132,7 @@ Exemple d’appel de la primitive `wait()` :
     où `num_pid_fils` est le pid du fils obtenu grâce à la commande
     `ps`.
 
-# BE
+## BE
 
 L’objectif du bureau d’étude est d’utiliser les différents appels
 système vus en cours pour réaliser un `minishell`. Les fichiers
@@ -196,13 +201,9 @@ Dans `minishell.c`, le processus père exécute :
 
 Compléter votre code pour offrir cette possibilité.  
 
-<div class="question">
-
 **Question 1**. *Pourquoi l’affichage du caractère $`>`$ s’effectue-t-il
 après 10s ? Si vous avez ce genre de comportement, modifiez le code pour
 l’éviter.*
-
-</div>
 
 #### Etape 5 (Attendre la terminaison du dernier fils lancé)
 
@@ -238,15 +239,11 @@ les constantes :
 
 `waitpid(-1, &status, 0)` est équivalent à `wait(&status)`.
 
-<div class="question">
-
 **Question 2**. *Remplacez l’attente de processus fils réalisée avec
 `wait` par une attente du processus en avant-plan avec la primitive
 `waitpid` (si vous ne l’avez pas déjà fait ou déjà utilisé dans ce cas).
 Que remarquez-vous sur l’état des processus exécutant les commandes en
 arrière-plan lorsqu’elles se terminent (utilisez `ps -fg`) ?*
-
-</div>
 
 #### Etape 6 (Traitement du signal `SIGCHLD`)
 
