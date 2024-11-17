@@ -3,10 +3,11 @@
 Les fichiers nécessaires au déroulement du BE se trouvent sous Github.
 Pour les récupérer, exécutez la commande :
 
-    > git clone git@github.com:ermont/be2.git
+     git clone git@github.com:ermont/be2.git
 
 Vous devriez obtenir un répertoire `be2` dont l’arborescence est la
 suivante :
+
 ```bash
 be2
 ├── README.md
@@ -20,11 +21,9 @@ be2
 ```
 
 L’exercice de la
-section <a href="#sec:gestion" data-reference-type="ref"
-data-reference="sec:gestion">2</a> permet de comprendre les intéractions
+section [2]{#sec:gestion} permet de comprendre les intéractions
 entre un processus fils et son processus parent. L’exercice de la
-section <a href="#sec:be" data-reference-type="ref"
-data-reference="sec:be">3</a> contient le BE à proprement parler. Le
+section 3 contient le BE à proprement parler. Le
 travail réalisé dans cette partie devra être remis sous Moodle et sera
 noté.
 
@@ -68,14 +67,14 @@ On considère le programme suivant :
 
 ## Exécution et état des processus
 
-1.  Compilez le programme en utilisant `gcc` :
+1. Compilez le programme en utilisant `gcc` :
 
         > gcc exo1.c -o exo1   
 
     Exécutez le : `./exo1` (Pourquoi faut-il ajouter `./` pour que cela
     fonctionne ?)
 
-2.  Utilisez la commande `ps -fg` dans un autre terminal et indiquez
+2. Utilisez la commande `ps -fg` dans un autre terminal et indiquez
     l’état des processus (`S` : `Sleeping`, en attente ; `R` :
     `Running`, actif ; `T` : `sTopped`, terminé ; `Z` : `Zombie`, ...) :
 
@@ -83,7 +82,7 @@ On considère le programme suivant :
 
     - après la fin du processus fils.
 
-3.  Modifiez le code en échangeant les valeurs de `tempsFils` et
+3. Modifiez le code en échangeant les valeurs de `tempsFils` et
     `tempsPere` et exécutez le programme. En utilisant la commande
     `ps -fg`, que constatez-vous lorsque le processus père a terminé ?
 
@@ -117,10 +116,10 @@ Exemple d’appel de la primitive `wait()` :
         }
     }
 
-1.  Quel est l’affichage du programme lorsque le processus se termine
+1. Quel est l’affichage du programme lorsque le processus se termine
     normalement (exécution de `exit`) ?
 
-2.  Quel est l’affichage du programme si on exécute dans un autre
+2. Quel est l’affichage du programme si on exécute dans un autre
     terminal la commande :
 
         kill -INT num_pid_fils
@@ -159,11 +158,11 @@ boucle. Pour chaque fils créé, le père exécute la commande `wait` pour
 attendre la terminaison de la commande en cours. L’enchaînement des
 commandes suit donc les étapes suivantes :
 
-1.  Création d’un processus fils ;
+1. Création d’un processus fils ;
 
-2.  Le processus fils lance la commande à l’aide de la primitive `exec`;
+2. Le processus fils lance la commande à l’aide de la primitive `exec`;
 
-3.  Le processus père attend la terminaison de la commande.
+3. Le processus père attend la terminaison de la commande.
 
 La 2ème commandes tapées au clavier peut se lancer à son tour en suivant
 ces différentes étapes. Modifiez votre code afin qu’il attende la fin de
