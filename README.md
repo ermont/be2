@@ -27,7 +27,7 @@ section 3 contient le BE à proprement parler. Le
 travail réalisé dans cette partie devra être remis sous Moodle et sera
 noté.
 
-# Gestion des processus
+# Gestion des processus {#sec:gestion}
 
 On considère le programme suivant :
 
