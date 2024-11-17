@@ -73,7 +73,7 @@ On considère le programme suivant :
 
 1. Compilez le programme en utilisant `gcc` :
 
-        > gcc exo1.c -o exo1   
+        gcc exo1.c -o exo1   
 
     Exécutez le : `./exo1` (Pourquoi faut-il ajouter `./` pour que cela
     fonctionne ?)
