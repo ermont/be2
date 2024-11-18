@@ -5,7 +5,7 @@
 Les fichiers nécessaires au déroulement du BE se trouvent sous Github.
 Pour les récupérer, exécutez la commande :
 
-     git clone git@github.com:ermont/be2.git
+     git clone https://github.com/ermont/be2.git
 
 Vous devriez obtenir un répertoire `be2` dont l’arborescence est la
 suivante :
