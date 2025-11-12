@@ -30,7 +30,7 @@ nécessaires sont disponibles dans le répertoire `minishell`.
 
 #### Etape 1 (Testez le programme)
 
-Compilez le programme en tapant `make` dans le répertoire de l’archive
+Compilez le programme en tapant `make` dans le répertoire `minishell`
 et lancez le en tapant `./minishell`. Quand une commande est tapée, le
 programme affiche (pour le moment) la commande et ses arguments. Pour
 sortir, tapez `exit`.
