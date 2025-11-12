@@ -13,7 +13,6 @@ suivante :
 ```bash
 be2
 ├── README.md
-├── exo1.c
 └── minishell
     ├── Makefile
     ├── SAVE
@@ -21,118 +20,9 @@ be2
     ├── minishell.c
     └── readcmd.h
 ```
+Le travail réalisé au cours du BE décrit dans la section suivante devra être remis sous Moodle et sera noté.
 
-L’exercice de la
-section 2 permet de comprendre les intéractions
-entre un processus fils et son processus parent. L’exercice de la
-section 3 contient le BE à proprement parler. Le
-travail réalisé dans cette partie devra être remis sous Moodle et sera
-noté.
-
-## Gestion des processus
-
-On considère le programme suivant :
-
-```c
-    int main(int argc, char *argv[]) {
-        int tempsPere, tempsFils;
-        pid_t pid_fork;
-
-        tempsPere= 120;
-        tempsFils= 60;
-
-        pid_fork= fork();
-        // bonne pratique : tester systématiquement le retour des primitives
-        if (pid_fork == -1) {
-            printf("Erreur fork\n");
-            exit(1);
-            /* par convention, renvoyer une valeur > 0 en cas d'erreur,
-             * différente pour chaque cause d'erreur, ici 1 = erreur fork
-             */
-        }
-        if (pid_fork == 0) {        /* fils */
-            printf("fils: processus %d, de père %d et code du fork %d\n", 
-                        getpid(), getppid(), pid_fork);
-            sleep(tempsFils);
-            printf("fin du fils\n");
-            exit(EXIT_SUCCESS); 
-            /*  bonne pratique : 
-                terminer les processus par un exit explicite */
-        }
-        else {      /* père */
-            printf("père: processus %d, de père %d et code du fork %d\n", 
-                        getpid(), getppid(), pid_fork);
-            sleep(tempsPere);
-            printf("fin du père\n");        
-        }
-        return EXIT_SUCCESS; /* -> exit(EXIT_SUCCESS); pour le père */
-    }
-```
-
-### Exécution et état des processus
-
-1. Compilez le programme en utilisant `gcc` :
-
-        gcc exo1.c -o exo1   
-
-    Exécutez le : `./exo1` (Pourquoi faut-il ajouter `./` pour que cela
-    fonctionne ?)
-
-2. Utilisez la commande `ps -fg` dans un autre terminal et indiquez
-    l’état des processus (`S` : `Sleeping`, en attente ; `R` :
-    `Running`, actif ; `T` : `sTopped`, terminé ; `Z` : `Zombie`, ...) :
-
-    - après le lancement du programme ;
-
-    - après la fin du processus fils.
-
-3. Modifiez le code en échangeant les valeurs de `tempsFils` et
-    `tempsPere` et exécutez le programme. En utilisant la commande
-    `ps -fg`, que constatez-vous lorsque le processus père a terminé ?
-
-### Héritage des données
-
-Modifiez le programme précédent avec :
-
-- `variable= 10;` au début du code du fils ;
-
-- `variable= 100;` au début du code du père.
-
-Affichez `variable` à la fin du code du fils et à la fin du code du
-père. Que constatez-vous ?
-
-### Attente de la terminaison du fils
-
-Remplacez la ligne `sleep(tempsPere)` pour que le processus attende la
-terminaison du fils.
-
-Exemple d’appel de la primitive `wait()` :
-```c
-    int status;
-    pid_t pidFils;
-    if ( (pidFils= wait(&status)) != -1 ) {
-        if (WIFEXITED(status)) {
-            printf("Le processus fils %d s'est terminé avec le code %i\n", 
-            pidFils, WEXITSTATUS(status));
-        } else if (WIFSIGNALED(status) {
-            printf("Le processus fils %d s'est terminé par le signal %i\n",
-            pidFils, WTERMSIG(status));
-        }
-    }
-```
-
-1. Quel est l’affichage du programme lorsque le processus se termine
-    normalement (exécution de `exit`) ?
-
-2. Quel est l’affichage du programme si on exécute dans un autre
-    terminal la commande :
-
-        kill -INT num_pid_fils
-
-    où `num_pid_fils` est le pid du fils obtenu grâce à la commande
-    `ps`.
-
-## BE
+## Minishell : un interpréteur de commandes simple
 
 L’objectif du bureau d’étude est d’utiliser les différents appels
 système vus en cours pour réaliser un `minishell`. Les fichiers
@@ -147,21 +37,57 @@ sortir, tapez `exit`.
 
 #### Etape 2 (Lancement d’une commande)
 
-Modifiez le code de manière à exécuter la commande saisie dans un
-processus fils en utilisant la primitive `exec` vue en cours,
-<https://moodle-n7.inp-toulouse.fr/pluginfile.php/152804/mod_resource/content/1/API_UNIX.pdf>
+Modifiez le code de manière à exécuter la commande saisie lorsqu'elle est différente de `exit` (`strcmp(cmd[0], "exit") != 0`).
+Comme vu en cours, <https://moodle.inp-toulouse.fr/pluginfile.php/55411/mod_resource/content/1/API_UNIX.pdf>, cela consiste à :
+1. Création du processus fils :
+```c
+pid_t pid_fils;
+pid_fils= fork();
+if (pid_fils == -1) {
+    // erreur de création du processus fils
+    perror("Erreur fork\n");
+    exit(EXIT_FAILURE);
+} else if (pid_fils == 0) {
+    // code du processus fils
+    ...
+} else {
+    // code du processus père
+    ...
+}
+```
+**Remarque :** Comme vu au BE1, le père et le fils exécutent ici le même programme, leur comportement est différencié par la valeur de `pid_fils`. 
 
-A ce stade, lorsque la commande est lancée, `minishell` se met
-immédiatement en attente d’une nouvelle commande, sans attendre la
-terminaison.
+2. Le processus fils exécute la commande tapée au clavier en utilisant la primitive `exec`.
+La commande à exécuter est contenue dans le tableau `cmd`.
+Par exemple, si l'utilisateur entre la commande `ls -l`, le tableau `cmd` contient alors :
+    - `cmd[0] == "ls"`
+    - `cmd[1] == "-l"`
+  
+Il existe différentes versions de la commande `exec` : 
+```c
+int execl(char *chemin, char *arg0, char *arg1, ..., char *argn, NULL);
+int execlp(char *chemin, char *arg0, char *arg1, ..., char *argn, NULL);
+int execle(char *chemin, char *arg0, char *arg1, ..., char *argn, NULL, char *env[]);
+int execv(char *chemin, char *argv[]);
+int execvp(char *chemin, char *argv[]);
+int execve(char *chemin, char *argv[], char *env[]);
+```
+Les lettres suivant `exec` signifient : 
+   - l/v : liste/tableau(vecteur)
+   - p : utilisation de la variable `PATH` pour la recherche de la commande à exécuter
+   - e : passage de l'environnement
+
+Dans notre cas, la recherche du chemin de la commande à exécuter se fera à l'aide de la variable environnement `PATH` et les différents arguments de la commande sont contenus dans le tableau `cmd`.
+Aussi vous pouvez choisir la bonne version de la primitive `exec` à utiliser.
+
+A ce stade, lorsque la commande est lancée, `minishell` se met immédiatement en attente d'une nouvelle commande, sans attendre la terminaison.
+On dit que la commande est lancée en « arrière plan » (background).
 
 #### Etape 3 (Enchaînement séquentiel des commandes)
 
-L’exécution des commandes étant faites dans un processus fils, enchaîner
-des commandes consistent tout simplement à créer les fils dans la
-boucle. Pour chaque fils créé, le père exécute la commande `wait` pour
-attendre la terminaison de la commande en cours. L’enchaînement des
-commandes suit donc les étapes suivantes :
+L'exécution d'une commande est maintenant faite dans un processus fils. Enchaîner les commandes consiste à attendre la terminaison de la commande en cours avant d'en lancer une deuxième. 
+Pour ce faire, le processus père exécute la commande `wait`, lui permettant attendre la terminaison de la commande en cours.
+L'enchaînement des commandes suit donc les étapes suivantes : 
 
 1. Création d’un processus fils ;
 
@@ -169,29 +95,52 @@ commandes suit donc les étapes suivantes :
 
 3. Le processus père attend la terminaison de la commande.
 
-La 2ème commandes tapées au clavier peut se lancer à son tour en suivant
+La 2ème commande tapée au clavier peut se lancer à son tour en suivant
 ces différentes étapes. Modifiez votre code afin qu’il attende la fin de
 la dernière commande lancée avant de passer à la lecture de la ligne
 suivante.
+
+Exemple d'appel de la primitive `wait()` :
+```c
+int status;
+pid_t pidFils;
+if ( (pidFils= wait(&status)) != -1 ) {
+    if (WIFEXITED(status)) {
+        printf("Le processus fils %d s'est terminé avec le code %i\n", 
+        pidFils, WEXITSTATUS(status));
+    } else if (WIFSIGNALED(status) {
+        printf("Le processus fils %d s'est terminé par le signal %i\n",
+        pidFils, WTERMSIG(status));
+    }
+}
+```
+
+Il est possible de tester le bon fonctionnement de cet enchaînement en exécutant la commande `sleep 10` dans le `minishell`. Cette commande effectue une attente de 10s.
+    1. Quel est l'affichage du programme lorsque le processus se termine normalement (exécution de `exit`) ?
+    2. Quel est l'affichage du programme si on exécute dans un autre terminal la commande :
+
+```kill -INT num_pid_fils```
+
+où `num_pid_fils` est le pid du fils obtenu grâce à la commande `ps`.
 
 #### Etape 4 (Lancement de commandes en tâche de fond)
 
 Lorsque l’utilisateur ajoute le caractère & après la commande, celle-ci
 s’exécutera en tâche de fond, c’est-à-dire le processus père n’attend
 pas sa terminaison :
-
+```
     > sleep 10 &
-
+```
 Dans le programme, `isBackgrounded()` nous indique que & a été
 positionné. La commande en avant-plan sera donc celle pour laquelle
 `isBackgrounded` est faux. Dans ce cas-là, le processus père doit
 attendre sa terminaison.
 
 Exécutez la suite de commandes :
-
+```
     > sleep 10 &
     > sleep 50
-
+```
 Dans `minishell.c`, le processus père exécute :
 
     if (!isBackgrounded()) {
@@ -199,9 +148,9 @@ Dans `minishell.c`, le processus père exécute :
                      // le compte-rendu de terminaison du fils
     }
 
-Compléter votre code pour offrir cette possibilité.  
+Complétez votre code pour offrir cette possibilité.  
 
-**Question 1**. *Pourquoi l’affichage du caractère $`>`$ s’effectue-t-il
+**Question 1**. *Pourquoi l’affichage du caractère `>` s’effectue-t-il
 après 10s ? Si vous avez ce genre de comportement, modifiez le code pour
 l’éviter.*
 
@@ -219,7 +168,7 @@ premier argument `pid_t pid` peut prendre l’une des valeurs suivantes :
 
 - -1 : n’importe quel processus fils ;
 
-- $`>0`$ : le numéro du processus fils attendu.
+- `>0` : le numéro du processus fils attendu.
 
 Comme pour `wait`, le code de retour est -1 en cas d’erreur ou le pid du
 processus terminé. Le status est le même que celui obtenu avec la
@@ -253,7 +202,9 @@ débloquer le processus père en attente de terminaison du fils via la
 commande PID. Ajoutez un traitement à la réception du signal `SIGCHLD`
 qui indique qu’un processus fils vient de terminer. Pour cela, utilisez
 la primitive :  
-`int sigaction(int sig, const struct sigaction *newaction, struct sigaction *oldaction);`  
+```c 
+int sigaction(int sig, const struct sigaction *newaction, struct sigaction *oldaction);
+```  
 Pour rappel, les différents champs de `struct sigaction` sont :
 
 - `void (*sa_handler)(int)` est le traitement associé au signal. La
