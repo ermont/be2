@@ -143,10 +143,12 @@ Exécutez la suite de commandes :
 ```
 Dans `minishell.c`, le processus père exécute :
 
+```c
     if (!isBackgrounded()) {
         wait(NULL);  // on ne souhaite pas récupérer 
                      // le compte-rendu de terminaison du fils
     }
+```
 
 Complétez votre code pour offrir cette possibilité.  
 
@@ -158,10 +160,12 @@ l’éviter.*
 
 Nous allons utiliser la fonction `waitpid`.
 
+```c
     #include <sys/types.h>
     #include <sys/wait.h>
 
     pid_t waitpid(pid_t pid, int *status, int options);    
+```
 
 La primitive `waitpid` a un comportement similaire à celui de `wait`. Le
 premier argument `pid_t pid` peut prendre l’une des valeurs suivantes :
