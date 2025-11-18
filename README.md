@@ -35,6 +35,17 @@ et lancez le en tapant `./minishell`. Quand une commande est tapée, le
 programme affiche (pour le moment) la commande et ses arguments. Pour
 sortir, tapez `exit`.
 
+**Editez le programme `minishell.c` :**
+Lancez un éditeur de texte (`gedit`, `pluma`, `gvim`, `emacs`, `codium`, ...) pour modifier lire et modifier le code du programme `minishell.c`.
+
+**Fonctionnement du programme :**
+
+1. `cmd= readcmd()` : le programme attend que l'utilisateur entre des commandes au clavier. Lorsqu'une commande est donnée, le tableau `cmd` contient `cmd[0]` = nom de la commande, `cmd[1]` = premier argument, `cmd[2]` = deuxième argument, et ainsi de suite.
+   
+2. `if (strcmp(cmd[0], "exit") == 0)` : si la commande entrée est `exit`, alors le programme termine.
+   
+3. Sinon on peut traiter la commande. C'est ici que nous allons modifier le code.
+
 #### Etape 2 (Lancement d’une commande)
 
 Modifiez le code de manière à exécuter la commande saisie lorsqu'elle est différente de `exit` (`strcmp(cmd[0], "exit") != 0`).
@@ -55,6 +66,8 @@ if (pid_fils == -1) {
     ...
 }
 ```
+Ajoutez ce code au traitement à réaliser lorsque la commande n'est pas `exit`.
+
 **Remarque :** Comme vu au BE1, le père et le fils exécutent ici le même programme, leur comportement est différencié par la valeur de `pid_fils`. 
 
 2. Le processus fils exécute la commande tapée au clavier en utilisant la primitive `exec`.
@@ -76,6 +89,15 @@ Les lettres suivant `exec` signifient :
    - l/v : liste/tableau(vecteur)
    - p : utilisation de la variable `PATH` pour la recherche de la commande à exécuter
    - e : passage de l'environnement
+
+**Exemple d'utilisation :**
+```c
+char tab[3]= {"ls", "-l", NULL};
+if (execvp(tab[0], tab) == -1) {
+    printf("%s : commande inconnue\n", tab[0]);
+    exit(EXIT_FAILURE);
+}
+```
 
 Dans notre cas, la recherche du chemin de la commande à exécuter se fera à l'aide de la variable environnement `PATH` et les différents arguments de la commande sont contenus dans le tableau `cmd`.
 Aussi vous pouvez choisir la bonne version de la primitive `exec` à utiliser.
@@ -108,7 +130,7 @@ if ( (pidFils= wait(&status)) != -1 ) {
     if (WIFEXITED(status)) {
         printf("Le processus fils %d s'est terminé avec le code %i\n", 
         pidFils, WEXITSTATUS(status));
-    } else if (WIFSIGNALED(status) {
+    } else if (WIFSIGNALED(status)) {
         printf("Le processus fils %d s'est terminé par le signal %i\n",
         pidFils, WTERMSIG(status));
     }
@@ -121,7 +143,7 @@ Il est possible de tester le bon fonctionnement de cet enchaînement en exécuta
 
 ```kill -INT num_pid_fils```
 
-où `num_pid_fils` est le pid du fils obtenu grâce à la commande `ps`.
+où `num_pid_fils` est le pid du fils obtenu grâce à la commande `ps -fjn`.
 
 #### Etape 4 (Lancement de commandes en tâche de fond)
 
@@ -131,9 +153,9 @@ pas sa terminaison :
 ```
     > sleep 10 &
 ```
-Dans le programme, `isBackgrounded()` nous indique que & a été
+Dans le programme, `isBackground()` nous indique que & a été
 positionné. La commande en avant-plan sera donc celle pour laquelle
-`isBackgrounded` est faux. Dans ce cas-là, le processus père doit
+`isBackground` est faux. Dans ce cas-là, le processus père doit
 attendre sa terminaison.
 
 Exécutez la suite de commandes :
@@ -144,17 +166,20 @@ Exécutez la suite de commandes :
 Dans `minishell.c`, le processus père exécute :
 
 ```c
-    if (!isBackgrounded()) {
-        wait(NULL);  // on ne souhaite pas récupérer 
-                     // le compte-rendu de terminaison du fils
-    }
+if (!isBackground()) {
+    // Le processus est lancé en avant-plan
+    int status;
+    pid_t pid_term; 
+    if ( (pid_term= wait(&status)) != -1 ) {
+    ...
+    // Le processus père attend la terminaison de son premier fils
+}
 ```
 
 Complétez votre code pour offrir cette possibilité.  
 
 **Question 1**. *Pourquoi l’affichage du caractère `>` s’effectue-t-il
-après 10s ? Si vous avez ce genre de comportement, modifiez le code pour
-l’éviter.*
+après 10s ? 
 
 #### Etape 5 (Attendre la terminaison du dernier fils lancé)
 
@@ -192,11 +217,11 @@ les constantes :
 
 `waitpid(-1, &status, 0)` est équivalent à `wait(&status)`.
 
-**Question 2**. *Remplacez l’attente de processus fils réalisée avec
-`wait` par une attente du processus en avant-plan avec la primitive
-`waitpid` (si vous ne l’avez pas déjà fait ou déjà utilisé dans ce cas).
-Que remarquez-vous sur l’état des processus exécutant les commandes en
-arrière-plan lorsqu’elles se terminent (utilisez `ps -fg`) ?*
+**A faire :**
+Remplacez l'attente de processus fils réalisée avec `wait` par une attente du processus en avant-plan avec la primitive `waitpid`, en mettant la valeur du champs `options` à 0.
+
+**Question 2**. *Que remarquez-vous sur l’état des processus exécutant les commandes en
+arrière-plan lorsqu’elles se terminent (utilisez `ps -fjn`) ?*
 
 #### Etape 6 (Traitement du signal `SIGCHLD`)
 
@@ -223,8 +248,23 @@ Pour rappel, les différents champs de `struct sigaction` sont :
 - `int sa_flags` est un ou logique de 0 ou plusieurs options. Ici, nous
   utiliserons l’option `SA_RESTART` (au lieu de 0).
 
-Dans le fichier `Makefile`, enlevez l’option de compilation `-std=c11`
-de la variable `CFLAGS`. Testez le programme en utilisant des processus
+**Exemple d'initialisation d'une variable de type `struct sigaction` :**
+```c
+struct sigaction mon_action;
+mon_action.sa_handler= traitement; // on associe le traitement au signal
+mon_action.sa_flags= SA_RESTART; // si un appel système doit être réalisé, il est relancé; nécessaire à cause de readcmd.
+sigemptyset(&mon_action.sa_mask); // on masque tous les signaux
+```
+
+**Exemple d'association du signal `SIGCHLD` à `mon_action` :**
+```c
+if (sigaction(SIGCHLD, &mon_action, NULL) == -1) {
+    printf("Erreur sigaction\n");
+    exit(EXIT_FAILURE);
+}    
+```
+
+Testez le programme en utilisant des processus
 en avant-plan et en arrière-plan (par exemple `sleep 10 &`). A ce stade,
 le `minishell` affiche un message lorsqu’un processus termine qu’il soit
 en avant-plan ou en arrière plan. Il est alors possible d’attendre la
@@ -243,6 +283,8 @@ code de retour, qui correspond au `pid` du processus qui vient de
 terminer. Pour rappel, `waitpid` retourne -1 si aucun processus
 n’existe.
 
+**Indice :** Copiez/collez la partie utilisant `waitpid` déjà écrite à l'étape 4.
+
 #### Etape 8 (Attendre un signal : `pause`)
 
 Puisque la terminaison des processus se fait dans le traitement du
@@ -260,6 +302,8 @@ Que constatez-vous ?
 Testez l’envoi des signaux `SIGSTOP` et `SIGCONT` vers un processus en
 arrière-plan. Dans quel état se trouve ce processus après lancement de
 chaque signal ?
+
+**Envoi d'un signal `SIGSTOP` à un processus :** `kill -STOP num_pid` où `num_pid` peut être obtenu via la commande `ps -fjn`. 
 
 #### Etape 10 (Affichage d’un message indiquant le signal reçu)
 
